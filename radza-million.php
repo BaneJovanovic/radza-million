@@ -206,6 +206,16 @@ class RadzaMilion
     }
 
     /**
+     * Return value is array in format:
+     *  array(
+     *      'money_status'          => $result,
+     *      'global_min'            => $globalMin,
+     *      'min_iteration_number'  => $minIterationNumber,
+     *      'global_max'            => $globalMax,
+     *      'max_iteration_number'  => $maxIterationNumber,
+     *  );
+     *
+     *
      * Gets number of combinations for every betting type and total odd for every combination
      *
      * Betting types        |       Number of combinations
@@ -223,7 +233,7 @@ class RadzaMilion
      * @param $budget
      * @param $percentageUsed
      * @param $turningSaldoVelocity
-     * @return array|float|int|mixed
+     * @return array
      */
     public function getBettingResults($type, $arrayWithGameResults, $gamesPerDay, $oddsArray, $budget, $percentageUsed, $turningSaldoVelocity)
     {
@@ -263,14 +273,51 @@ class RadzaMilion
         }
 
         $minBudget = $budget;
-        foreach ($bettingData as $item) {
-            $moneyPerDay = $budget * $percentageUsed;
-            echo "TEMP MONEY STATUS: " . number_format($result, 2) . ", TEMP MONEY PER DAY: $moneyPerDay, ODDS-RESULTS PER DAY ";
-            foreach ($item['game_results'] as $key => $gameResults) {
-                echo $item['start_odds'][$key] . "-" . $item['game_results'][$key] . " ";
-            }
-            ?><br><?php
+        $moneyPerDay = $budget * $percentageUsed;
+        $globalMin = $budget;
+        $minIterationNumber = 0;
+        $globalMax = $budget;
+        $maxIterationNumber = 0;
 
+?>
+        <table id="iterations" style="width:100%">
+            <tr>
+                <th>Iteration #</th>
+                <th>Marker</th>
+                <th>Daily odds</th>
+                <th>TB</th>
+                <th>MPD</th>
+                <th>ET</th>
+            </tr>
+<?php
+
+        foreach ($bettingData as $iterationNumber => $item) {
+
+            if ($result > $globalMax) {
+                $globalMax = $result;
+                $maxIterationNumber = $iterationNumber;
+            }
+
+            if ($result < $globalMin) {
+                $globalMin = $result;
+                $minIterationNumber = $iterationNumber;
+            }
+
+?>
+            <tr>
+                <td align="center"><?php $this->log($iterationNumber + 1); ?></td>
+                <td align="center"><?php $this->log(count($item['game_results']) . " game(s)"); ?></td>
+                <td align="center"><?php
+                        foreach ($item['game_results'] as $key => $gameResults) {
+                            $this->log($item['start_odds'][$key] . "-" . $item['game_results'][$key] . " ");
+                        }
+                    ?>
+                </td>
+                <td align="center"><?php $this->log(number_format($result, 2)); ?></td>
+                <td align="center"><?php $this->log($moneyPerDay); ?></td>
+                <td align="center">ET</td>
+            </tr>
+<?php
             $result -= $moneyPerDay;
             $moneyPerCombination = $moneyPerDay / $item['combinations'];
 
@@ -278,19 +325,61 @@ class RadzaMilion
                 $result += $odd * $moneyPerCombination;
             }
 
-            if ($turningSaldoVelocity) {
-                while ($result < $budget && $budget != $minBudget) {
-                    $budget = $budget / (1 + $turningSaldoVelocity);
-                }
+            $calculateMoneyPerDayFromBudget = $this->calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $result);
 
-                while ($result >= $budget * (1 + $turningSaldoVelocity)) {
-                    $budget *= (1 + $turningSaldoVelocity);
-                }
+            $budget         = $calculateMoneyPerDayFromBudget['budget'];
+            $moneyPerDay    = $calculateMoneyPerDayFromBudget['money_per_day'];
+        }
+?>
+        </table>
+<?php
+
+        $rval = array(
+            'money_status'          => $result,
+            'global_min'            => $globalMin,
+            'min_iteration_number'  => $minIterationNumber,
+            'global_max'            => $globalMax,
+            'max_iteration_number'  => $maxIterationNumber,
+        );
+        return $rval;
+    }
+
+    /**
+     * This method calculate money per day from budget and turning saldo velocity. Return value is array in format
+     *      array(
+     *          'budget' => $budget,
+     *          'money_per_day' => $moneyPerDay
+     *      );
+     *
+     * @param $moneyPerDay
+     * @param $budget
+     * @param $minBudget
+     * @param $turningSaldoVelocity
+     * @param $newBudget
+     * @return array
+     */
+    public function calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $newBudget)
+    {
+        if ($turningSaldoVelocity >= 1) {
+            while ($newBudget < $budget && $budget != $minBudget) {
+                $budget = $budget / $turningSaldoVelocity;
+                $moneyPerDay /= 2;
+            }
+
+            while ($newBudget >= $budget * $turningSaldoVelocity) {
+                $budget *= $turningSaldoVelocity;
+                $moneyPerDay *= 2;
             }
         }
 
-        return $result;
+        $rval = array(
+            'budget' => $budget,
+            'money_per_day' => $moneyPerDay
+        );
+
+        return $rval;
     }
+
 
     /**
      * @param $games
