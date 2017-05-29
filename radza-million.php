@@ -213,7 +213,19 @@ class RadzaMilion
      *      'min_iteration_number'  => $minIterationNumber,
      *      'global_max'            => $globalMax,
      *      'max_iteration_number'  => $maxIterationNumber,
-     *  );
+     *      'table_data'            => array(
+     *                                  'Iteration'
+     *                                  'Marker',
+     *                                  'Daily odds',
+     *                                  'TB',
+     *                                  'MPD',
+     *                                  'ET',
+     *                                  'CT'
+     *                              ),
+     *      'earned_total'          => $earnedTotal,
+     *      'game_over_amount',
+     *      'total_days_played'
+     *          );
      *
      *
      * Gets number of combinations for every betting type and total odd for every combination
@@ -233,16 +245,17 @@ class RadzaMilion
      * @param $budget
      * @param $percentageUsed
      * @param $turningSaldoVelocity
+     * @param $creamStrategyData
      * @return array
      */
-    public function getBettingResults($type, $arrayWithGameResults, $gamesPerDay, $oddsArray, $budget, $percentageUsed, $turningSaldoVelocity)
+    public function getBettingResults($type, $arrayWithGameResults, $gamesPerDay, $oddsArray, $budget, $percentageUsed, $turningSaldoVelocity, $creamStrategyData)
     {
         $bettingData = array();
-        $result = $budget;
+        $tempBudget = $budget;
 
         if ($type < 1) {
             $this->log('Betting type not selected');
-            return $result;
+            return $tempBudget;
         }
 
         $counter = 0;
@@ -279,68 +292,153 @@ class RadzaMilion
         $globalMax = $budget;
         $maxIterationNumber = 0;
 
-?>
-        <table id="iterations" style="width:100%">
-            <tr>
-                <th>Iteration #</th>
-                <th>Marker</th>
-                <th>Daily odds</th>
-                <th>TB</th>
-                <th>MPD</th>
-                <th>ET</th>
-            </tr>
-<?php
+        $earnedTotal = 0;
 
+        $tableData = array();
         foreach ($bettingData as $iterationNumber => $item) {
 
-            if ($result > $globalMax) {
-                $globalMax = $result;
+            if ($tempBudget > $globalMax) {
+                $globalMax = $tempBudget;
                 $maxIterationNumber = $iterationNumber;
             }
 
-            if ($result < $globalMin) {
-                $globalMin = $result;
+            if ($tempBudget < $globalMin) {
+                $globalMin = $tempBudget;
                 $minIterationNumber = $iterationNumber;
             }
 
-?>
-            <tr>
-                <td align="center"><?php $this->log($iterationNumber + 1); ?></td>
-                <td align="center"><?php $this->log(count($item['game_results']) . " game(s)"); ?></td>
-                <td align="center"><?php
-                        foreach ($item['game_results'] as $key => $gameResults) {
-                            $this->log($item['start_odds'][$key] . "-" . $item['game_results'][$key] . " ");
-                        }
-                    ?>
-                </td>
-                <td align="center"><?php $this->log(number_format($result, 2)); ?></td>
-                <td align="center"><?php $this->log($moneyPerDay); ?></td>
-                <td align="center">ET</td>
-            </tr>
-<?php
-            $result -= $moneyPerDay;
+            $tableOddsData = '';
+            foreach ($item['game_results'] as $key => $gameResults) {
+                $tableOddsData .= $item['start_odds'][$key] . "-" . $item['game_results'][$key] . " ";
+            }
+
+            $tableData[] = array(
+                'Iteration'     => $iterationNumber + 1,
+                'Marker'        => count($item['game_results']) . " game(s)",
+                'Daily odds'    => $tableOddsData,
+                'TB'            => number_format($tempBudget, 3),
+                'MPD'           => $moneyPerDay,
+                'ET'            => number_format($earnedTotal, 3),
+                'CT'            => number_format($creamStrategyData['cream_taker'], 3),
+            );
+
+            $tempBudget -= $moneyPerDay;
             $moneyPerCombination = $moneyPerDay / $item['combinations'];
 
             foreach ($item['odds'] as $odd) {
-                $result += $odd * $moneyPerCombination;
+                $tempBudget += $odd * $moneyPerCombination;
             }
 
-            $calculateMoneyPerDayFromBudget = $this->calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $result);
+            $calculateMoneyPerDayFromBudget = $this->calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $tempBudget);
 
             $budget         = $calculateMoneyPerDayFromBudget['budget'];
             $moneyPerDay    = $calculateMoneyPerDayFromBudget['money_per_day'];
+
+            if ($creamStrategyData['dynamic_cream_strategy']) {
+                $calculatedCreamStrategy = $this->calculateDynamicCreamStrategy($creamStrategyData, $tempBudget, $earnedTotal);
+            } else {
+                $calculatedCreamStrategy = $this->calculateStaticCreamStrategy($creamStrategyData, $tempBudget, $earnedTotal);
+            }
+
+            $earnedTotal = $calculatedCreamStrategy['earned_total'];
+            $tempBudget = $calculatedCreamStrategy['temp_budget'];
+
+            if (isset($calculatedCreamStrategy['cream_taker'])) {
+                $creamStrategyData['cream_taker'] = $calculatedCreamStrategy['cream_taker'];
+            }
+
+            if (isset($calculatedCreamStrategy['stop'])) {
+                break;
+            }
         }
-?>
-        </table>
-<?php
 
         $rval = array(
-            'money_status'          => $result,
-            'global_min'            => $globalMin,
+            'money_status'          => $tempBudget,
+            'global_min'            => number_format($globalMin, 3),
             'min_iteration_number'  => $minIterationNumber,
-            'global_max'            => $globalMax,
+            'global_max'            => number_format($globalMax, 3),
             'max_iteration_number'  => $maxIterationNumber,
+            'table_data'            => $tableData,
+            'earned_total'          => number_format($earnedTotal, 3),
+            'game_over_amount'      => number_format($tempBudget + $earnedTotal, 3),
+            'total_days_played'     => $iterationNumber + 1
         );
+        return $rval;
+    }
+
+    /**
+     * Method do Static cream strategy calculations and return array in format
+     * array(
+     *      earned_total,   - value of earned total
+     *      stop            - this field is set to 1 if we reach showstopper value
+     * )
+     *
+     * @param $creamStrategyData
+     * @param $tempBudget
+     * @param $earnedTotal
+     * @return array
+     */
+    public function calculateStaticCreamStrategy($creamStrategyData, $tempBudget, $earnedTotal)
+    {
+        $rval = array();
+
+        if (strlen($creamStrategyData['cream_taker']) && is_numeric($creamStrategyData['cream_taker'])
+            && strlen($creamStrategyData['percentage_for_cream']) && is_numeric($creamStrategyData['percentage_for_cream'])) {
+
+            if ($tempBudget >= $creamStrategyData['cream_taker']) {
+                $diff = $tempBudget * $creamStrategyData['percentage_for_cream'];
+                $earnedTotal += $diff;
+                $tempBudget -= $diff;
+            }
+        }
+
+        if (strlen($creamStrategyData['showstopper']) && is_numeric($creamStrategyData['showstopper'])) {
+            if ($earnedTotal + $tempBudget >= $creamStrategyData['showstopper']) {
+                $rval['stop'] = 1;
+            }
+        }
+
+        $rval['earned_total'] = $earnedTotal;
+        $rval['temp_budget'] = $tempBudget;
+
+        return $rval;
+    }
+
+    /**
+     * (ct - cream taker;  tb - temp budget; poc - “percentage for cream” ; et = “earned total”, cc - “change criteria”)
+     * if  tb > ct then et += ct*poc && tb-=ct*poc && ct=ct*cc
+     * NOTE: ct can only become bigger value, it is not reducing if tb lowers down
+     *
+     * @param $creamStrategyData
+     * @param $tempBudget
+     * @param $earnedTotal
+     * @return array
+     */
+    public function calculateDynamicCreamStrategy($creamStrategyData, $tempBudget, $earnedTotal)
+    {
+        $rval = array();
+
+        if (strlen($creamStrategyData['cream_taker']) && is_numeric($creamStrategyData['cream_taker'])
+            && strlen($creamStrategyData['percentage_for_cream']) && is_numeric($creamStrategyData['percentage_for_cream'])
+            && strlen($creamStrategyData['change_criteria']) && is_numeric($creamStrategyData['change_criteria'])) {
+
+            if ($tempBudget >= $creamStrategyData['cream_taker']) {
+                $diff = $tempBudget * $creamStrategyData['percentage_for_cream'];
+                $earnedTotal += $diff;
+                $tempBudget -= $diff;
+                $rval['cream_taker'] = $creamStrategyData['cream_taker'] * $creamStrategyData['change_criteria'];
+            }
+        }
+
+        if (strlen($creamStrategyData['showstopper']) && is_numeric($creamStrategyData['showstopper'])) {
+            if ($earnedTotal + $tempBudget >= $creamStrategyData['showstopper']) {
+                $rval['stop'] = 1;
+            }
+        }
+
+        $rval['earned_total'] = $earnedTotal;
+        $rval['temp_budget'] = $tempBudget;
+
         return $rval;
     }
 
