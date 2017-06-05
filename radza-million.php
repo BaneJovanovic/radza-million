@@ -318,6 +318,12 @@ class RadzaMilion
                 );
             }
 
+            if (strlen($creamStrategyData['cream_taker'])) {
+                $creamTaker = $creamStrategyData['cream_taker'];
+            } else {
+                $creamTaker = 0;
+            }
+
             $tableData[] = array(
                 'Iteration'     => $iterationNumber + 1,
                 'Marker'        => count($item['game_results']) . " game(s)",
@@ -325,7 +331,7 @@ class RadzaMilion
                 'TB'            => number_format($tempBudget, 3),
                 'MPD'           => $moneyPerDay,
                 'ET'            => number_format($earnedTotal, 3),
-                'CT'            => number_format($creamStrategyData['cream_taker'], 3),
+                'CT'            => number_format($creamTaker, 3),
             );
 
             $tempBudget -= $moneyPerDay;
@@ -663,6 +669,7 @@ class RadzaMilion
 
         $data[] = 0;
         $data[] = 1;
+        $combinations[2]['n-1'] = $this->getCombinations($data, 1);
         for ($i = 2; $i <= 13; $i++) {
             $data[] = $i;
             $combinations[$i + 1]['n-1'] = $this->getCombinations($data, $i);

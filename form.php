@@ -245,25 +245,28 @@
         if (isset($_POST['action'])) {
             if ($_POST['action'] == 'Generate') {
                 $_SESSION['array-with-probability'] = $radzaMillion->generateArrayWithProbability($_POST['games-count'], $_POST['probability']);
-                ?>
-                <script language="javascript" type="text/javascript">
-                    document.getElementById('probability-result').innerHTML = '<?php echo implode("", $_SESSION['array-with-probability']) ?>';
-                </script>
-                <?php
 
                 $probabilityPerDayData = $radzaMillion->generateInputArrayForGamesPerDay($_POST);
                 $_SESSION['games-per-day'] = $radzaMillion->generateGamesPerDayArray($_POST['games-count'], $probabilityPerDayData);
-                ?>
-                <script language="javascript" type="text/javascript">
-                    document.getElementById('probability-per-day-result').innerHTML = '<?php echo implode(" ", $_SESSION['games-per-day']) ?>';
-                </script>
-                <?php
 
                 $_SESSION['odds-array'] = $radzaMillion->generateOddsArray($_POST['games-count'], $_POST['min-odd'], $_POST['max-odd'], $_POST['avg-odd'])
+
                 ?>
                 <script language="javascript" type="text/javascript">
+                    document.getElementById('probability-result').innerHTML = '<?php echo implode("", $_SESSION['array-with-probability']) ?>';
+                    document.getElementById('probability-per-day-result').innerHTML = '<?php echo implode(" ", $_SESSION['games-per-day']) ?>';
                     document.getElementById('generated-odds-result').innerHTML = '<?php echo implode(" ", $_SESSION['odds-array']) ?>';
+
+                    var bettingTypeDropDown = document.getElementById('betting-type');
+
+                    <?php if (in_array('1', $_SESSION['games-per-day'])): ?>
+                        bettingTypeDropDown.options[4].style.display = "none";
+                    <?php endif; ?>
+                        <?php if (in_array('1', $_SESSION['games-per-day']) || in_array('2', $_SESSION['games-per-day'])): ?>
+                        bettingTypeDropDown.options[5].style.display = "none";
+                    <?php endif; ?>
                 </script>
+
                 <?php
 
                 if (isset($_POST['betting-type']) && $_POST['betting-type'] > 0) {
