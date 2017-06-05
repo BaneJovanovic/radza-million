@@ -12,6 +12,9 @@ class RadzaMilion
     const BETTING_TYPE_K_1_K_K      = 4;
     const BETTING_TYPE_K_2_K_1_K_K  = 5;
 
+    /** @var array All generated combinations */
+    public $allCombinations = null;
+
     /**
      * This method generate '1's with probability $probability
      *
@@ -527,6 +530,9 @@ class RadzaMilion
         $totalOdd = 1;
         foreach ($oddsArray as $key => $item) {
             $totalOdd *= $oddsArray[$key] * $gameResultsArray[$key];
+            if ($totalOdd == 0) {
+                break;
+            }
         }
 
         $result[] = $totalOdd;
@@ -551,11 +557,16 @@ class RadzaMilion
         $result = array();
 
         $arrayKeys = array_keys($gameResultsArray);
-        $combinations = $this->getCombinations($arrayKeys, $games - 1);
+
+        $allCombinations = $this->generateAllCombinations();
+        $combinations = $allCombinations[count($arrayKeys)]['n-1'];
         foreach ($combinations as $combination) {
             $totalOdd = 1;
             foreach ($combination as $item) {
                 $totalOdd *= $oddsArray[$item] * $gameResultsArray[$item];
+                if ($totalOdd == 0) {
+                    break;
+                }
             }
             $result[] = $totalOdd;
         }
@@ -580,12 +591,17 @@ class RadzaMilion
         $result = array();
 
         $arrayKeys = array_keys($gameResultsArray);
-        $combinations = $this->getCombinations($arrayKeys, $games - 1);
+
+        $allCombinations = $this->generateAllCombinations();
+        $combinations = $allCombinations[count($arrayKeys)]['n-1'];
         $combinations[] = $arrayKeys;
         foreach ($combinations as $combination) {
             $totalOdd = 1;
             foreach ($combination as $item) {
                 $totalOdd *= $oddsArray[$item] * $gameResultsArray[$item];
+                if ($totalOdd == 0) {
+                    break;
+                }
             }
             $result[] = $totalOdd;
         }
@@ -610,13 +626,18 @@ class RadzaMilion
         $result = array();
 
         $arrayKeys = array_keys($gameResultsArray);
-        $combinations = $this->getCombinations($arrayKeys, $games - 2);
-        $combinations = array_merge($combinations, $this->getCombinations($arrayKeys, $games - 1));
+
+        $allCombinations = $this->generateAllCombinations();
+        $combinations = $allCombinations[count($arrayKeys)]['n-2'];
+        $combinations = array_merge($combinations, $allCombinations[count($arrayKeys)]['n-1']);
         $combinations[] = $arrayKeys;
         foreach ($combinations as $combination) {
             $totalOdd = 1;
             foreach ($combination as $item) {
                 $totalOdd *= $oddsArray[$item] * $gameResultsArray[$item];
+                if ($totalOdd == 0) {
+                    break;
+                }
             }
             $result[] = $totalOdd;
         }
@@ -626,7 +647,32 @@ class RadzaMilion
         return $bettingData;
     }
 
-//    public function generateAllCombinations
+    /**
+     * Get all generated combinations
+     *
+     * @return array
+     */
+    public function generateAllCombinations()
+    {
+        if (!is_null($this->allCombinations)) {
+            return $this->allCombinations;
+        }
+
+        $combinations = array();
+        $data = array();
+
+        $data[] = 0;
+        $data[] = 1;
+        for ($i = 2; $i <= 13; $i++) {
+            $data[] = $i;
+            $combinations[$i + 1]['n-1'] = $this->getCombinations($data, $i);
+            $combinations[$i + 1]['n-2'] = $this->getCombinations($data, $i - 1);
+        }
+
+        $this->allCombinations = $combinations;
+
+        return $this->allCombinations;
+    }
 
     /**
      * @param $base
