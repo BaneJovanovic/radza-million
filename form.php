@@ -16,6 +16,8 @@
     <!-- Optional theme -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 
+    <link rel="stylesheet" href="css/style.css">
+
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -25,9 +27,11 @@
 <body>
     <?php
         session_start();
+        ini_set('max_execution_time', 0);
     ?>
 
     <div class="container">
+        <br><br>
         <div class="row">
             <div class="col-md-12">
                 <form action="" method="post" id="main-form">
@@ -44,8 +48,12 @@
                     <br>
 
                     <input class="btn btn-primary" type="button" id="show-hide-results" value="Show/Hide"/><br>
-                    <label id="probability-result" style="display: none">Not generated!</label><br>
+                    <label id="probability-result" style="display: none">Not generated!</label>
                     <br>
+
+                    <hr/>
+
+                    <br/>
 
                     <div class="form-inline">
                         <label>Add probability for games per day</label><br>
@@ -97,7 +105,13 @@
 
                     <input class="btn btn-primary" type="button" id="show-hide-probability-per-day-result" value="Show/Hide"/><br>
 
-                    <label id="probability-per-day-result" style="display: none">Not generated!</label><br>
+                    <label id="probability-per-day-result" style="display: none">Not generated!</label>
+
+                    <br>
+
+                    <hr/>
+
+                    <br/>
 
                     <div class="form-inline">
                         <h3>Average odds</h3>
@@ -117,7 +131,12 @@
                     <input class="btn btn-primary" type="button" id="show-hide-generated-odds-result" value="Show/Hide"/><br>
 
                     <label id="generated-odds-result" style="display: none">Not generated!</label><br>
-                    <br><br>
+
+                    <br>
+
+                    <hr/>
+
+                    <br/>
 
                     <input class="btn btn-danger" type="submit" name="action" value="Generate" id="generate" />
                     <br><br><br>
@@ -171,7 +190,12 @@
                            value="<?php echo isset($_POST['change-criteria']) ? $_POST['change-criteria'] : '' ?>" /><br>
 
                     <input class="btn btn-success" type="submit" name="action" value="Analyze" id="analyze" />
-                    <br><br>
+
+                    <br>
+
+                    <hr/>
+
+                    <br/>
 
                     <div class="form-inline">
                         <label for="global-max">Max</label>
@@ -316,7 +340,7 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <table class="table table-hover">
-                                        <tr>
+                                        <tr class="info">
                                             <th>#</th>
                                             <th>Marker</th>
                                             <th>Daily odds</th>
@@ -331,7 +355,11 @@
                                                     <tr>
                                                         <td><?php echo $item['Iteration']; ?></td>
                                                         <td><?php echo $item['Marker']; ?></td>
-                                                        <td><?php echo $item['Daily odds']; ?></td>
+                                                        <td>
+                                                            <?php foreach ($item['Daily odds'] as $oddItem): ?>
+                                                                <p class="<?php echo $oddItem['class'] ?>"><?php echo $oddItem['odd']; ?></p>
+                                                            <?php endforeach; ?>
+                                                        </td>
                                                         <td><?php echo $item['TB']; ?></td>
                                                         <td><?php echo $item['MPD']; ?></td>
                                                         <td><?php echo $item['ET']; ?></td>

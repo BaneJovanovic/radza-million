@@ -307,9 +307,12 @@ class RadzaMilion
                 $minIterationNumber = $iterationNumber;
             }
 
-            $tableOddsData = '';
+            $tableOddsData = array();
             foreach ($item['game_results'] as $key => $gameResults) {
-                $tableOddsData .= $item['start_odds'][$key] . "-" . $item['game_results'][$key] . " ";
+                $tableOddsData[] = array(
+                    'class' => $item['game_results'][$key] ? 'success-text' : 'failure-text',
+                    'odd'   =>  $item['start_odds'][$key]
+                );
             }
 
             $tableData[] = array(
@@ -370,6 +373,7 @@ class RadzaMilion
      * Method do Static cream strategy calculations and return array in format
      * array(
      *      earned_total,   - value of earned total
+     *      temp_budget,
      *      stop            - this field is set to 1 if we reach showstopper value
      * )
      *
@@ -386,7 +390,7 @@ class RadzaMilion
             && strlen($creamStrategyData['percentage_for_cream']) && is_numeric($creamStrategyData['percentage_for_cream'])) {
 
             if ($tempBudget >= $creamStrategyData['cream_taker']) {
-                $diff = $tempBudget * $creamStrategyData['percentage_for_cream'];
+                $diff = $creamStrategyData['cream_taker'] * $creamStrategyData['percentage_for_cream'];
                 $earnedTotal += $diff;
                 $tempBudget -= $diff;
             }
@@ -409,6 +413,12 @@ class RadzaMilion
      * if  tb > ct then et += ct*poc && tb-=ct*poc && ct=ct*cc
      * NOTE: ct can only become bigger value, it is not reducing if tb lowers down
      *
+     * array(
+     *      earned_total,   - value of earned total
+     *      temp_budget,
+     *      cream_taker
+     *      stop            - this field is set to 1 if we reach showstopper value
+     * )
      * @param $creamStrategyData
      * @param $tempBudget
      * @param $earnedTotal
@@ -423,7 +433,7 @@ class RadzaMilion
             && strlen($creamStrategyData['change_criteria']) && is_numeric($creamStrategyData['change_criteria'])) {
 
             if ($tempBudget >= $creamStrategyData['cream_taker']) {
-                $diff = $tempBudget * $creamStrategyData['percentage_for_cream'];
+                $diff = $creamStrategyData['cream_taker'] * $creamStrategyData['percentage_for_cream'];
                 $earnedTotal += $diff;
                 $tempBudget -= $diff;
                 $rval['cream_taker'] = $creamStrategyData['cream_taker'] * $creamStrategyData['change_criteria'];
@@ -616,6 +626,8 @@ class RadzaMilion
         return $bettingData;
     }
 
+//    public function generateAllCombinations
+
     /**
      * @param $base
      * @param $n
@@ -624,7 +636,7 @@ class RadzaMilion
     public function getCombinations($base, $n)
     {
         $baseLength = count($base);
-        if ($baseLength == 0) {
+        if ($baseLength == 0 || $n <= 0) {
             return;
         }
 
