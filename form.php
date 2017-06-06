@@ -225,20 +225,8 @@
     </div>
     <br><br>
 
-    <div class="container">
-        <div class="row">
-            <div class="col-md-12">
 
-                <!-- dodaj rezultat ovde -->
-            </div>
-        </div>
-    </div>
-
-
-
-
-
-            <?php
+    <?php
         require_once 'radza-million.php';
         $radzaMillion = new RadzaMilion();
 
@@ -256,15 +244,6 @@
                     document.getElementById('probability-result').innerHTML = '<?php echo implode("", $_SESSION['array-with-probability']) ?>';
                     document.getElementById('probability-per-day-result').innerHTML = '<?php echo implode(" ", $_SESSION['games-per-day']) ?>';
                     document.getElementById('generated-odds-result').innerHTML = '<?php echo implode(" ", $_SESSION['odds-array']) ?>';
-
-                    var bettingTypeDropDown = document.getElementById('betting-type');
-
-                    <?php if (in_array('1', $_SESSION['games-per-day'])): ?>
-                        bettingTypeDropDown.options[4].style.display = "none";
-                    <?php endif; ?>
-                        <?php if (in_array('1', $_SESSION['games-per-day']) || in_array('2', $_SESSION['games-per-day'])): ?>
-                        bettingTypeDropDown.options[5].style.display = "none";
-                    <?php endif; ?>
                 </script>
 
                 <?php
@@ -378,6 +357,25 @@
                     <?php
                 }
             }
+            ?>
+            <script language="javascript" type="text/javascript">
+                var bettingTypeDropDown = document.getElementById('betting-type');
+
+                <?php if (in_array('1', $_SESSION['games-per-day'])): ?>
+                    bettingTypeDropDown.options[3].style.display = "none";
+                    bettingTypeDropDown.options[4].style.display = "none";
+                    if (bettingTypeDropDown.selectedIndex == 3 || bettingTypeDropDown.selectedIndex == 4) {
+                        bettingTypeDropDown.selectedIndex = 0;
+                    }
+                <?php endif; ?>
+                <?php if (in_array('1', $_SESSION['games-per-day']) || in_array('2', $_SESSION['games-per-day'])): ?>
+                    bettingTypeDropDown.options[5].style.display = "none";
+                    if (bettingTypeDropDown.selectedIndex == 5) {
+                        bettingTypeDropDown.selectedIndex = 0;
+                    }
+                <?php endif; ?>
+            </script>
+            <?php
         }
     ?>
 
