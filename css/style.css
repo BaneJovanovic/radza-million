@@ -5,3 +5,9 @@
 .failure-text {
     color: red;
 }
+
+#probability-result,
+#probability-per-day-result,
+#generated-odds-result {
+    display: none;
+}
