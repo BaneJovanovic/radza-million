@@ -37,6 +37,7 @@
                     <input type="hidden" name="generate-form-submit" id="generate-form-submit" value="1" />
 
                     <div class="form-inline">
+                        <h3>Target Scenarios</h3>
                         <label for="probability">Win ratio</label>
                         <input class="form-control" type="text" size="4" maxlength="4" name="probability" id="probability" />
 
@@ -49,6 +50,25 @@
                     <label id="probability-result">Not generated!</label>
 
                     <br><hr/><br/>
+
+                    <div class="breakpoint-list" id="breakpoint-list">
+                        <div class="form-inline">
+                            <label for="min-allowed">Min allowed</label>
+                            <input class="form-control" type="text" size="4" maxlength="4" name="min-allowed[]" id="min-allowed" />
+
+                            <label for="desired-day">Desired day</label>
+                            <input class="form-control" type="text" size="4" maxlength="4" name="desired-day[]" id="desired-day" />
+
+                            <label for="desired-goal">Desired goal</label>
+                            <input class="form-control" type="text" size="4" maxlength="4" name="desired-goal[]" id="desired-goal" />
+
+                            <label for="condition-probability0">Condition probability</label>
+                            <output class="form-control" type="text" size="4" maxlength="4" name="condition-probability" id="condition-probability"></output>
+
+                            <button class="btn btn-primary" type="button" id="add-breakpoint">+</button>
+                        </div>
+                    </div>
+
 
                     <div class="form-inline">
                         <label>Add probability for games per day</label><br>
@@ -188,47 +208,10 @@
         </div>
     </div>
     <div class="container">
-        <div class="row">
+        <div class="row output-result">
             <div class="col-md-12">
                 <div class="form-inline">
-                    <label for="global-max">Max</label>
-                    <output id="global-max" class="form-control"></output>
-
-                    <label for="global-max-position">After iteration</label>
-                    <output id="global-max-position" class="form-control"></output>
-
-                    <label for="global-min">Min</label>
-                    <output id="global-min" class="form-control"></output>
-
-                    <label for="global-min-position">After iteration</label>
-                    <output id="global-min-position" class="form-control"></output>
-
-                    <label for="earned-total">Earned Total</label>
-                    <output id="earned-total" class="form-control"></output>
-
-                    <label for="game-over-amount">Game over amount</label>
-                    <output id="game-over-amount" class="form-control"></output>
-
-                    <label for="total-days-played">Days played</label>
-                    <output id="total-days-played" class="form-control"></output>
                 </div>
-
-                <br><br>
-
-                <table class="table table-hover" id="records-table">
-                    <thead>
-                        <tr class="info">
-                            <th>#</th>
-                            <th>Marker</th>
-                            <th>Daily odds</th>
-                            <th>TB</th>
-                            <th>MPD</th>
-                            <th>ET</th>
-                            <th>CT</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
             </div>
         </div>
     </div>
