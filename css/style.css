@@ -11,3 +11,11 @@
 #generated-odds-result {
     display: none;
 }
+
+#breakpoint-list label {
+    margin: 10px;
+}
+
+.output-result label {
+    margin: 10px;
+}

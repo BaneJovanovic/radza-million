@@ -272,10 +272,11 @@ class RadzaMilion
      * @param $budget
      * @param $percentageUsed
      * @param $turningSaldoVelocity
+     * @param $dailyAmplifier
      * @param $creamStrategyData
      * @return array
      */
-    public function getBettingResults($type, $arrayWithGameResults, $gamesPerDay, $oddsArray, $budget, $percentageUsed, $turningSaldoVelocity, $creamStrategyData)
+    public function getBettingResults($type, $arrayWithGameResults, $gamesPerDay, $oddsArray, $budget, $percentageUsed, $turningSaldoVelocity, $dailyAmplifier, $creamStrategyData)
     {
         $bettingData = array();
         $tempBudget = $budget;
@@ -352,10 +353,10 @@ class RadzaMilion
                 'Iteration'     => $iterationNumber + 1,
                 'Marker'        => count($item['game_results']) . " game(s)",
                 'DailyOdds'     => $tableOddsData,
-                'TB'            => number_format($tempBudget, 3),
+                'TB'            => round($tempBudget, 3),
                 'MPD'           => $moneyPerDay,
-                'ET'            => number_format($earnedTotal, 3),
-                'CT'            => number_format($creamTaker, 3),
+                'ET'            => round($earnedTotal, 3),
+                'CT'            => round($creamTaker, 3),
             );
 
             $tempBudget -= $moneyPerDay;
@@ -365,7 +366,7 @@ class RadzaMilion
                 $tempBudget += $odd * $moneyPerCombination;
             }
 
-            $calculateMoneyPerDayFromBudget = $this->calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $tempBudget);
+            $calculateMoneyPerDayFromBudget = $this->calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $dailyAmplifier, $tempBudget);
 
             $budget         = $calculateMoneyPerDayFromBudget['budget'];
             $moneyPerDay    = $calculateMoneyPerDayFromBudget['money_per_day'];
@@ -390,13 +391,13 @@ class RadzaMilion
 
         $rval = array(
             'money_status'          => $tempBudget,
-            'global_min'            => number_format($globalMin, 3),
+            'global_min'            => round($globalMin, 3),
             'min_iteration_number'  => $minIterationNumber,
-            'global_max'            => number_format($globalMax, 3),
+            'global_max'            => round($globalMax, 3),
             'max_iteration_number'  => $maxIterationNumber,
             'table_data'            => $tableData,
-            'earned_total'          => number_format($earnedTotal, 3),
-            'game_over_amount'      => number_format($tempBudget + $earnedTotal, 3),
+            'earned_total'          => round($earnedTotal, 3),
+            'game_over_amount'      => round($tempBudget + $earnedTotal, 3),
             'total_days_played'     => $iterationNumber + 1
         );
         return $rval;
@@ -496,20 +497,21 @@ class RadzaMilion
      * @param $budget
      * @param $minBudget
      * @param $turningSaldoVelocity
+     * @param $dailyAmplifier
      * @param $newBudget
      * @return array
      */
-    public function calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $newBudget)
+    public function calculateMoneyPerDayFromBudget($moneyPerDay, $budget, $minBudget, $turningSaldoVelocity, $dailyAmplifier, $newBudget)
     {
         if ($turningSaldoVelocity >= 1) {
             while ($newBudget < $budget && $budget != $minBudget) {
                 $budget = $budget / $turningSaldoVelocity;
-                $moneyPerDay /= 2;
+                $moneyPerDay /= $dailyAmplifier;
             }
 
             while ($newBudget >= $budget * $turningSaldoVelocity) {
                 $budget *= $turningSaldoVelocity;
-                $moneyPerDay *= 2;
+                $moneyPerDay *= $dailyAmplifier;
             }
         }
 
@@ -678,6 +680,44 @@ class RadzaMilion
     }
 
     /**
+     * Calculate probability of breakpoints
+     *
+     * @param $analyzeResults
+     * @param $postedData
+     * @return mixed
+     */
+    public function calculateConditionProbability($analyzeResults, $postedData)
+    {
+        $result = array();
+
+        foreach ($postedData['desired-goal'] as $key => $goal) {
+            $successful = 0;
+            foreach ($analyzeResults['analyze-data'] as $itemKey => $item) {
+                if ($item['global_min'] >= $postedData['min-allowed']) {
+                    $analyzeResults['analyze-data'][$itemKey]['radza-probability'] = 1;
+                    if (strlen($postedData['desired-day'][$key]) && $postedData['desired-day'][$key] < $item['total_days_played']) {
+                        $desiredDay = $postedData['desired-day'][$key];
+                    } else {
+                        $desiredDay = $item['total_days_played'];
+                    }
+
+                    if ($item['table_data'][$desiredDay-1]['TB'] + $item['table_data'][$desiredDay-1]['ET'] >= $goal) {
+                        $successful++;
+                    }
+                } else {
+                    $analyzeResults['analyze-data'][$itemKey]['radza-probability'] = 0;
+                }
+            }
+
+            $result[$key] = $successful / count($analyzeResults['analyze-data']);
+        }
+
+        $analyzeResults['condition-probability'] = $result;
+
+        return $analyzeResults;
+    }
+
+    /**
      * Get all generated combinations
      *
      * @return array
@@ -764,9 +804,13 @@ class RadzaMilion
 
         if (strlen($postedData['number-of-tests']) && $postedData['number-of-tests'] > 1) {
             $analyzeButtonClickResult = $this->analyzeButtonClickResultMultiple($postedData);
+
+            $analyzeButtonClickResult = $this->calculateConditionProbability($analyzeButtonClickResult, $postedData);
         } else {
             $analyzeButtonClickResult['analyze-data'][] = $this->analyzeButtonClickResultSingle($postedData);
         }
+
+        $this->addDataToDatabase($postedData, $analyzeButtonClickResult);
 
         return $analyzeButtonClickResult;
     }
@@ -843,19 +887,19 @@ class RadzaMilion
 
         $analyzeButtonClickResultMultiple['min_min'] = $minMin;
         $analyzeButtonClickResultMultiple['max_min'] = $maxMin;
-        $analyzeButtonClickResultMultiple['avg_min'] = number_format($avgMin / $postedData['number-of-tests'], 3);
+        $analyzeButtonClickResultMultiple['avg_min'] = round($avgMin / $postedData['number-of-tests'], 3);
 
         $analyzeButtonClickResultMultiple['min_max'] = $minMax;
         $analyzeButtonClickResultMultiple['max_max'] = $maxMax;
-        $analyzeButtonClickResultMultiple['avg_max'] = number_format($avgMax / $postedData['number-of-tests'], 3);
+        $analyzeButtonClickResultMultiple['avg_max'] = round($avgMax / $postedData['number-of-tests'], 3);
 
         $analyzeButtonClickResultMultiple['min_et'] = $minET;
         $analyzeButtonClickResultMultiple['max_et'] = $maxET;
-        $analyzeButtonClickResultMultiple['avg_et'] = number_format($avgET / $postedData['number-of-tests'], 3);
+        $analyzeButtonClickResultMultiple['avg_et'] = round($avgET / $postedData['number-of-tests'], 3);
 
         $analyzeButtonClickResultMultiple['min_goa'] = $minGOA;
         $analyzeButtonClickResultMultiple['max_goa'] = $maxGOA;
-        $analyzeButtonClickResultMultiple['avg_goa'] = number_format($avgGOA / $postedData['number-of-tests'], 3);
+        $analyzeButtonClickResultMultiple['avg_goa'] = round($avgGOA / $postedData['number-of-tests'], 3);
 
         $analyzeButtonClickResultMultiple['analyze-data'] = $analyzeData;
 
@@ -886,6 +930,7 @@ class RadzaMilion
             (float) $postedData['budget'],
             (float) $postedData['percentage-used'],
             (float) $postedData['turning-saldo-velocity'],
+            (float) $postedData['daily-amplifier'],
             $creamStrategyData
         );
 
@@ -902,5 +947,41 @@ class RadzaMilion
     public function log($message)
     {
         $this->errorLog[] = $message;
+    }
+
+    public function addDataToDatabase($postedData, $analyzeButtonClickResult)
+    {
+        $servername = "localhost";
+        $username = "radzkspg_radzkspg";
+        $password = "CVPrdCd4woQuX";
+
+        // Create connection
+        $conn = new mysqli($servername, $username, $password);
+
+        // Check connection
+        if ($conn->connect_error) {
+            die("Connection failed: " . $conn->connect_error);
+        }
+
+        $selected = mysqli_select_db($conn,"radzkspg_radza_million")
+        or die("Could not select examples");
+
+        $minOdd = $postedData['min-odd'];
+        $maxOdd = $postedData['max-odd'];
+        $bettingType = $postedData['betting-type'];
+        $ba = $postedData['turning-saldo-velocity'];
+        $dpa = $postedData['percentage-used'];
+        $da = $postedData['daily-amplifier'];
+
+        foreach ($analyzeButtonClickResult['analyze-data'] as $row) {
+            $probability = $row['radza-probability'];
+            $goa = $row['game_over_amount'];
+
+            $sql = "INSERT INTO analyze_results (min_odd, max_odd, betting_type, ba, dpa, da, probability, goa)
+                VALUES ($minOdd, $maxOdd, $bettingType, $ba, $dpa, $da, $probability, $goa)";
+
+            $conn->query($sql);
+        }
+
     }
 }

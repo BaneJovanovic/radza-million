@@ -1,4 +1,6 @@
 jQuery(function($) {
+    var counter = 0;
+
     $("#generate").on({
         click: function(e) {
             e.preventDefault();
@@ -46,6 +48,12 @@ jQuery(function($) {
     $("#analyze").on({
         click: function(e) {
             e.preventDefault();
+
+            if (counter > 1000) {
+                return;
+            }
+
+            counter++;
 
             $("#records-table tbody").empty();
 
@@ -259,7 +267,8 @@ jQuery(function($) {
 
                     var resultTable = $('<table>').attr({
                         id: 'records-table' + key,
-                        class: 'table table-hover'
+                        class: 'table table-hover',
+                        style: 'display: none'
                     }).append(
                         $('<thead>').append(
                             $('<tr>').attr({
@@ -303,10 +312,35 @@ jQuery(function($) {
                     wrapper.append(resultTable);
                 });
 
+                var key = 0;
+                $("output[name='condition-probability[]']").each(function() {
+                    $(this).val(obj['condition-probability'][key]);
+                    key++;
+                });
+
+
+
+
+
+                setTimeout(function(){
+                    $('#analyze').trigger('click');
+                }, 1000);
+
+
                 /*
                 $("#analyze-error-result").html(obj['error'].join("<br>"));
                 */
             });
+        }
+    });
+
+    $("#show-hide-tables").on({
+        click: function (e) {
+            if ($(".table").css("display") == 'none') {
+                $(".table").show();
+            } else {
+                $(".table").hide();
+            }
         }
     });
 
@@ -351,42 +385,29 @@ jQuery(function($) {
             });
 
             $('<label>').attr({
-                for: 'min-allowed'
-            }).text('Min allowed').appendTo(newBreakpoint);
-            $('<input>').attr({
-                id: 'min-allowed',
-                name: 'min-allowed[]',
-                size: 4,
-                class: 'form-control'
-            }).appendTo(newBreakpoint);
-
-            $('<label>').attr({
                 for: 'desired-day'
             }).text('Desired day').appendTo(newBreakpoint);
             $('<input>').attr({
-                id: 'desired-day',
                 name: 'desired-day[]',
                 size: 4,
-                class: 'form-control'
+                class: 'form-control desired-day'
             }).appendTo(newBreakpoint);
 
             $('<label>').attr({
                 for: 'desired-goal'
             }).text('Desired goal').appendTo(newBreakpoint);
             $('<input>').attr({
-                id: 'desired-goal',
                 name: 'desired-goal[]',
                 size: 4,
-                class: 'form-control'
+                class: 'form-control desired-goal'
             }).appendTo(newBreakpoint);
 
             $('<label>').attr({
                 for: 'condition-probability'
             }).text('Condition probability').appendTo(newBreakpoint);
             $('<output>').attr({
-                id: 'condition-probability',
-                name: 'condition-probability',
-                class: 'form-control'
+                name: 'condition-probability[]',
+                class: 'form-control condition-probability'
             }).appendTo(newBreakpoint);
 
             $('<button>').attr({

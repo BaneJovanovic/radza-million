@@ -52,18 +52,19 @@
                     <br><hr/><br/>
 
                     <div class="breakpoint-list" id="breakpoint-list">
-                        <div class="form-inline">
-                            <label for="min-allowed">Min allowed</label>
-                            <input class="form-control" type="text" size="4" maxlength="4" name="min-allowed[]" id="min-allowed" />
+                        <label for="min-allowed">Min allowed</label>
+                        <input class="form-control" type="text" size="4" maxlength="4" name="min-allowed" id="min-allowed" />
+                        <br>
 
+                        <div class="form-inline">
                             <label for="desired-day">Desired day</label>
-                            <input class="form-control" type="text" size="4" maxlength="4" name="desired-day[]" id="desired-day" />
+                            <input class="form-control desired-day" type="text" size="4" maxlength="4" name="desired-day[]" />
 
                             <label for="desired-goal">Desired goal</label>
-                            <input class="form-control" type="text" size="4" maxlength="4" name="desired-goal[]" id="desired-goal" />
+                            <input class="form-control desired-goal" type="text" size="4" maxlength="4" name="desired-goal[]" />
 
-                            <label for="condition-probability0">Condition probability</label>
-                            <output class="form-control" type="text" size="4" maxlength="4" name="condition-probability" id="condition-probability"></output>
+                            <label for="condition-probability">Condition probability</label>
+                            <output class="form-control condition-probability" type="text" size="4" maxlength="4" name="condition-probability[]"></output>
 
                             <button class="btn btn-primary" type="button" id="add-breakpoint">+</button>
                         </div>
@@ -157,16 +158,20 @@
 
                     <h3>Budget management</h3>
 
-                    <label for="budget">Budget</label>
+                    <label for="budget">Starting Budget</label>
                     <input class="form-control" type="text" size="6" maxlength="6" name="budget" id="budget" />
                     <br>
 
-                    <label for="percentage-used">Percentage used</label>
+                    <label for="turning-saldo-velocity">Budget amplifier</label>
+                    <input class="form-control" type="text" size="6" maxlength="6" name="turning-saldo-velocity" id="turning-saldo-velocity" />
+                    <br>
+
+                    <label for="percentage-used">Daily Percentage amount</label>
                     <input class="form-control" type="text" size="6" maxlength="6" name="percentage-used" id="percentage-used" />
                     <br>
 
-                    <label for="turning-saldo-velocity">Turning saldo velocity</label>
-                    <input class="form-control" type="text" size="6" maxlength="6" name="turning-saldo-velocity" id="turning-saldo-velocity" />
+                    <label for="daily-amplifier">Daily amplifier</label>
+                    <input class="form-control" type="text" size="6" maxlength="6" name="daily-amplifier" id="daily-amplifier" />
                     <br>
 
                     <div class="checkbox">
@@ -203,6 +208,7 @@
                     <div name="analyze-error-result" id="analyze-error-result"></div>
 
                     <br><hr/><br/>
+                    <input class="btn btn-primary" type="button" id="show-hide-tables" value="Show/Hide Tables"/><br>
                 </form>
             </div>
         </div>
